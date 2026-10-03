@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Preorder": {
+      "title": "Preorder",
+      "description": "A customer preorder record for StudyLock",
+      "type": "object",
+      "properties": {
+        "preorderId": { "type": "string", "maxLength": 30 },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "whatsapp": { "type": "string", "maxLength": 30 },
+        "platform": { "type": "string", "enum": ["windows", "android", "complete_pack"] },
+        "basePrice": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "discountPercent": { "type": "number" },
+        "discountApplied": { "type": "boolean" },
+        "discountType": { "type": "string", "maxLength": 50 },
+        "finalAmount": { "type": "number" },
+        "paymentRequired": { "type": "boolean" },
+        "paymentStatus": { "type": "string", "enum": ["free_promo", "reservation", "pending", "paid"] },
+        "preorderStatus": { "type": "string", "enum": ["confirmed", "cancelled"] },
+        "promotion": { "type": "string", "maxLength": 50 },
+        "source": { "type": "string", "maxLength": 50 },
+        "consentMarketing": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["preorderId", "fullName", "email", "platform", "finalAmount", "paymentStatus", "preorderStatus"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Global settings for pricing, currency, and preorder availability",
+      "type": "object",
+      "properties": {
+        "windowsPrice": { "type": "number" },
+        "androidPrice": { "type": "number" },
+        "completePrice": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "currencySymbol": { "type": "string", "maxLength": 5 },
+        "paymentEnabled": { "type": "boolean" },
+        "reservationOnly": { "type": "boolean" },
+        "preorderEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["currency", "paymentEnabled", "reservationOnly", "preorderEnabled"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin authorization entry",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/preorders/{preorderId}": {
+      "schema": "Preorder",
+      "description": "Preorder records submitted by users or created via server API"
+    },
+    "/appSettings/{settingId}": {
+      "schema": "AppSettings",
+      "description": "Application launch and pricing settings configured by admins"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "List of authorized administrator user IDs"
+    }
+  }
+}

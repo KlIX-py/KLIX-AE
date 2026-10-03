@@ -1,0 +1,6 @@
+{
+  "name": "StudyLock — Lock In. Finish the Session.",
+  "description": "Preorder StudyLock, focus software designed to block distractions, enforce study sessions and keep students on schedule across Windows and Android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

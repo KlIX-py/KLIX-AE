@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Primitives
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == 'bloodbath319@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        isBootstrappedAdmin()
+      );
+    }
+
+    // AppSettings validation
+    function isValidAppSettings(data) {
+      return data.keys().hasAll(['currency', 'paymentEnabled', 'reservationOnly', 'preorderEnabled']) &&
+        data.keys().hasOnly(['windowsPrice', 'androidPrice', 'completePrice', 'currency', 'currencySymbol', 'paymentEnabled', 'reservationOnly', 'preorderEnabled', 'updatedAt']) &&
+        data.currency is string && data.currency.size() <= 10 &&
+        data.paymentEnabled is bool &&
+        data.reservationOnly is bool &&
+        data.preorderEnabled is bool;
+    }
+
+    // Preorder validation
+    function isValidPreorder(data) {
+      return data.keys().hasAll(['preorderId', 'fullName', 'email', 'platform', 'finalAmount', 'paymentStatus', 'preorderStatus']) &&
+        data.keys().hasOnly(['preorderId', 'fullName', 'email', 'whatsapp', 'platform', 'basePrice', 'currency', 'discountPercent', 'discountApplied', 'discountType', 'finalAmount', 'paymentRequired', 'paymentStatus', 'preorderStatus', 'promotion', 'source', 'consentMarketing', 'createdAt', 'updatedAt']) &&
+        data.preorderId is string && data.preorderId.size() <= 30 &&
+        data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 100 &&
+        data.email is string && data.email.size() > 3 && data.email.size() <= 150 &&
+        data.platform in ['windows', 'android', 'complete_pack'] &&
+        data.finalAmount is number && data.finalAmount >= 0 &&
+        data.paymentStatus in ['free_promo', 'reservation', 'pending', 'paid'] &&
+        data.preorderStatus in ['confirmed', 'cancelled'];
+    }
+
+    // Admin collection rules
+    match /admins/{adminId} {
+      allow read, write: if isValidId(adminId) && isAdmin();
+    }
+
+    // AppSettings collection rules - public read for pricing/launch status, admin write
+    match /appSettings/{settingId} {
+      allow read: if isValidId(settingId);
+      allow create, update: if isValidId(settingId) && isAdmin() && isValidAppSettings(incoming());
+      allow delete: if isValidId(settingId) && isAdmin();
+    }
+
+    // Preorders collection rules - strictly protected customer records
+    match /preorders/{preorderId} {
+      // List and read restricted strictly to verified Admins to prevent PII scraping
+      allow read, list: if isAdmin();
+      // Creation allowed with strict schema check
+      allow create: if isValidId(preorderId) && isValidPreorder(incoming());
+      // Updates and deletes only by Admins
+      allow update, delete: if isValidId(preorderId) && isAdmin();
+    }
+  }
+}
